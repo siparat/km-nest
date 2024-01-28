@@ -1,0 +1,38 @@
+version: '3'
+services:
+  common_db:
+    image: postgres:latest
+    container_name: common_db
+    restart: always
+    ports:
+      - 5432:5432
+    env_file:
+      - .env.commondb
+    volumes:
+      - common_db:/var/lib/postgresql/data
+    networks:
+      - main
+
+  movies_db:
+    image: postgres:latest
+    container_name: movies_db
+    restart: always
+    ports:
+      - 8088:5432
+    env_file:
+      - .env.moviesdb
+    volumes:
+      - movies_db:/var/lib/postgresql/data
+    networks:
+      - main
+
+networks:
+  main:
+    driver: bridge
+
+volumes:
+  upload:
+
+  movies_db:
+
+  common_db:

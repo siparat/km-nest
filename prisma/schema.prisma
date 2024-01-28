@@ -1,0 +1,179 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    output   = "./generated/common"
+}
+
+datasource db {
+    provider      = "postgresql"
+    url           = env("COMMON_DATABASE")
+}
+
+model UserModel {
+    id                  Int                 @id @default(autoincrement())
+    createdAt           DateTime            @default(now())
+    updatedAt           DateTime            @updatedAt
+    email               String              @unique
+    login               String              @unique
+    password            String
+    avatar              String?
+    notification        Boolean             @default(false)
+    verified            Boolean             @default(false)
+    role                Role                @default(USER)
+    rankId              Int                 @default(1)
+    userPoints          Int                 @default(0)
+    updatedEmailAt      DateTime?
+    updatedLoginAt      DateTime?
+    watchedMinutes      Int                 @default(0)
+    lastViewToken       String?
+    awardId             Int?
+    marks               Int[]
+    confirmToken        String?
+    notificationToken   String
+    blocked             Boolean             @default(false)
+    updatedAvatarAt     DateTime?
+    collections         Collection[]        @relation("creators")
+    comment             Comment[]
+    historyPoints       PointsHistoryItem[]
+    awardSelected       Award?              @relation("selected", fields: [awardId], references: [id])
+    rank                Rank                @relation(fields: [rankId], references: [id])
+    collectionsDislikes Collection[]        @relation("collectionsDislikes")
+    collectionsLikes    Collection[]        @relation("collectionsLikes")
+    dislikes            Comment[]           @relation("dislikes")
+    subscriptions       Collection[]        @relation("followers")
+    likes               Comment[]           @relation("likes")
+    awardsOpen          Award[]             @relation("open")
+    history             HistoryItem[]
+    bonuses             Bonus[]             @relation("user")
+    bonusesGranted      Bonus[]             @relation("admin")
+}
+
+model HistoryItem {
+    id        Int       @id @default(autoincrement())
+    createdAt DateTime  @default(now())
+    movieId   Int
+    userId    Int
+    user      UserModel @relation(fields: [userId], references: [id], onDelete: Cascade)
+    token     String
+}
+
+model Rank {
+    id        Int         @id @default(autoincrement())
+    createdAt DateTime    @default(now())
+    updatedAt DateTime    @updatedAt
+    name      String      @unique
+    points    Int
+    awardId   Int?
+    award     Award?      @relation(fields: [awardId], references: [id])
+    userModel UserModel[]
+}
+
+model Bonus {
+    id          Int       @id @default(autoincrement())
+    createdAt   DateTime  @default(now())
+    expiries    DateTime
+    multiplier  Int
+    userModelId Int
+    userModel   UserModel @relation("user", fields: [userModelId], references: [id], onDelete: Cascade)
+    adminId     Int
+    admin       UserModel @relation("admin", fields: [adminId], references: [id])
+}
+
+model PointsItem {
+    id                Int                 @id @default(autoincrement())
+    name              String
+    addPoints         Int
+    pointsHistoryItem PointsHistoryItem[]
+}
+
+model PointsHistoryItem {
+    id             Int         @id @default(autoincrement())
+    name           String?
+    addPoints      Int?
+    pointsAddedAt  DateTime    @default(now())
+    pointsItemId   Int?
+    userModelId    Int
+    userMultiplier Float?      @default(1)
+    pointsItem     PointsItem? @relation(fields: [pointsItemId], references: [id])
+    userModel      UserModel   @relation(fields: [userModelId], references: [id], onDelete: Cascade)
+}
+
+model Award {
+    id                Int           @id @default(autoincrement())
+    createdAt         DateTime      @default(now())
+    updatedAt         DateTime      @updatedAt
+    name              String
+    icon              String
+    condition         String
+    description       String
+    category          AwardCategory
+    rank              Rank[]
+    position          Int           @default(autoincrement())
+    userModelSelected UserModel[]   @relation("selected")
+    userModelOpen     UserModel[]   @relation("open")
+}
+
+model Comment {
+    id        Int           @id @default(autoincrement())
+    content   String
+    createdAt DateTime      @default(now())
+    userId    Int
+    status    StatusComment @default(DRAFT)
+    parentId  Int?
+    movieId   Int
+    updatedAt DateTime      @updatedAt
+    parent    Comment?      @relation("ChildComments", fields: [parentId], references: [id])
+    children  Comment[]     @relation("ChildComments")
+    user      UserModel     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    dislikes  UserModel[]   @relation("dislikes")
+    likes     UserModel[]   @relation("likes")
+}
+
+model Collection {
+    id          Int         @id @default(autoincrement())
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+    creatorId   Int
+    moviesId    Int[]
+    color       String
+    name        String
+    description String?
+    private     Boolean     @default(false)
+    creator     UserModel   @relation("creators", fields: [creatorId], references: [id], onDelete: Cascade)
+    dislikes    UserModel[] @relation("collectionsDislikes")
+    likes       UserModel[] @relation("collectionsLikes")
+    followers   UserModel[] @relation("followers")
+}
+
+model Holidays {
+    id    Int      @id @default(autoincrement())
+    name  String
+    start DateTime
+    end   DateTime
+    bonus Int
+}
+
+enum StatusComment {
+    REJECTED
+    DRAFT
+    PUBLISHED
+}
+
+enum Role {
+    USER
+    MODERATOR
+    ADMIN
+}
+
+enum VisibleMode {
+    VISIBLE
+    HIDDEN
+}
+
+enum AwardCategory {
+    REGISTER
+    RANKS
+    POINTS
+}
